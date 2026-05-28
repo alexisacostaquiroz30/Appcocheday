@@ -1,0 +1,97 @@
+{
+  "entities": {
+    "user": {
+      "title": "User Profile",
+      "description": "Information about the driver",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string", "description": "Unique identifier for the user" },
+        "email": { "type": "string", "description": "User email" },
+        "displayName": { "type": "string", "description": "User display name" },
+        "createdAt": { "type": "string", "format": "date-time", "description": "When the profile was created" }
+      },
+      "required": ["uid", "email"]
+    },
+    "trip": {
+      "title": "Trip",
+      "description": "A ride registered by the driver",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Trip identifier" },
+        "driverId": { "type": "string", "description": "The UID of the driver" },
+        "passengerName": { "type": "string", "description": "Name of the passenger" },
+        "fare": { "type": "number", "description": "Fare price of the ride" },
+        "observation": { "type": "string", "description": "Optional notes or comments" },
+        "isPaid": { "type": "boolean", "description": "Whether the trip has been paid" },
+        "createdAt": { "type": "string", "format": "date-time", "description": "Creation timestamp" }
+      },
+      "required": ["id", "driverId", "passengerName", "fare", "isPaid", "createdAt"]
+    },
+    "expense": {
+      "title": "Tiny Expense",
+      "description": "Snacks, drinks, meals or tiny driver expenses",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Expense identifier" },
+        "driverId": { "type": "string", "description": "The UID of the driver" },
+        "category": { "type": "string", "enum": ["dulces", "agua", "bebida", "comida", "otros"], "description": "Type of expense" },
+        "amount": { "type": "number", "description": "Expense amount" },
+        "observation": { "type": "string", "description": "Optional extra details" },
+        "createdAt": { "type": "string", "format": "date-time", "description": "Creation timestamp" }
+      },
+      "required": ["id", "driverId", "category", "amount", "createdAt"]
+    },
+    "maintenance": {
+      "title": "Maintenance Record",
+      "description": "Records about car oil changes and status",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Maintenance identifier" },
+        "driverId": { "type": "string", "description": "The UID of the driver" },
+        "oilChangeKm": { "type": "number", "description": "Mileage at oil change" },
+        "oilChangeDurationKm": { "type": "number", "description": "KM life of the oil" },
+        "currentKm": { "type": "number", "description": "Current mileage registered during oil change" },
+        "observation": { "type": "string", "description": "Optional comments" },
+        "createdAt": { "type": "string", "format": "date-time", "description": "Creation timestamp" }
+      },
+      "required": ["id", "driverId", "oilChangeKm", "oilChangeDurationKm", "createdAt"]
+    },
+    "gas_load": {
+      "title": "Gasoline load",
+      "description": "Log of refuels / gasoline loading",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Refuel log identifier" },
+        "driverId": { "type": "string", "description": "The UID of the driver" },
+        "liters": { "type": "number", "description": "Liters loaded" },
+        "price": { "type": "number", "description": "Total price paid" },
+        "currentKm": { "type": "number", "description": "Current mileage if recorded" },
+        "observation": { "type": "string", "description": "Optional details" },
+        "createdAt": { "type": "string", "format": "date-time", "description": "Creation timestamp" }
+      },
+      "required": ["id", "driverId", "price", "createdAt"]
+    }
+  },
+  "firestore": {
+    "users": {
+      "schema": "user",
+      "description": "User profiles for drivers"
+    },
+    "trips": {
+      "schema": "trip",
+      "description": "Driver rides ledger"
+    },
+    "expenses": {
+      "schema": "expense",
+      "description": "Tiny expenses recorder"
+    },
+    "maintenance": {
+      "schema": "maintenance",
+      "description": "Vehicle maintenance status logs"
+    },
+    "gas_loads": {
+      "schema": "gas_load",
+      "description": "Gas loading logs"
+    }
+  }
+}

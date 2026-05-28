@@ -1,0 +1,6 @@
+{
+  "name": "Control de Viajes y Gastos para Conductores",
+  "description": "Aplicación móvil para que conductores de coche registren sus viajes, cobros, pasajes, gastos hormiga, recarga de gasolina y control de kilometraje del cambio de aceite.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

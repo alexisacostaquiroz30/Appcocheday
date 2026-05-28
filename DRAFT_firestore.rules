@@ -1,0 +1,129 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // 1. Global Safety Net
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Common Helpers
+    function isSignedIn() {
+      return request.auth != null;
+    }
+    
+    function isVerifiedUser() {
+      return isSignedIn();
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    // Entity Specific Validators
+    function isValidUser(data) {
+      return data.keys().hasAll(['uid', 'email', 'displayName', 'createdAt'])
+        && data.keys().size() == 4
+        && data.uid is string && data.uid.size() <= 128
+        && data.email is string && data.email.size() <= 200
+        && data.displayName is string && data.displayName.size() <= 200
+        && data.createdAt is string && data.createdAt.size() <= 100;
+    }
+
+    function isValidTrip(data) {
+      return data.keys().hasAll(['id', 'driverId', 'passengerName', 'fare', 'observation', 'isPaid', 'createdAt'])
+        && data.keys().size() == 7
+        && data.id is string && data.id.size() <= 128
+        && data.driverId is string && data.driverId.size() <= 128
+        && data.passengerName is string && data.passengerName.size() <= 200
+        && (data.fare is number || data.fare is int) && data.fare >= 0
+        && data.observation is string && data.observation.size() <= 1000
+        && data.isPaid is bool
+        && data.createdAt is string && data.createdAt.size() <= 100;
+    }
+
+    function isValidExpense(data) {
+      return data.keys().hasAll(['id', 'driverId', 'category', 'amount', 'observation', 'createdAt'])
+        && data.keys().size() == 6
+        && data.id is string && data.id.size() <= 128
+        && data.driverId is string && data.driverId.size() <= 128
+        && data.category is string && data.category.size() <= 50
+        && (data.amount is number || data.amount is int) && data.amount >= 0
+        && data.observation is string && data.observation.size() <= 1000
+        && data.createdAt is string && data.createdAt.size() <= 100;
+    }
+
+    function isValidMaintenance(data) {
+      return data.keys().hasAll(['id', 'driverId', 'oilChangeKm', 'oilChangeDurationKm', 'currentKm', 'observation', 'createdAt'])
+        && data.keys().size() == 7
+        && data.id is string && data.id.size() <= 128
+        && data.driverId is string && data.driverId.size() <= 128
+        && (data.oilChangeKm is number || data.oilChangeKm is int) && data.oilChangeKm >= 0
+        && (data.oilChangeDurationKm is number || data.oilChangeDurationKm is int) && data.oilChangeDurationKm >= 0
+        && (data.currentKm is number || data.currentKm is int) && data.currentKm >= 0
+        && data.observation is string && data.observation.size() <= 1000
+        && data.createdAt is string && data.createdAt.size() <= 100;
+    }
+
+    function isValidGasLoad(data) {
+      return data.keys().hasAll(['id', 'driverId', 'liters', 'price', 'currentKm', 'observation', 'createdAt'])
+        && data.keys().size() == 7
+        && data.id is string && data.id.size() <= 128
+        && data.driverId is string && data.driverId.size() <= 128
+        && (data.liters is number || data.liters is int) && data.liters >= 0
+        && (data.price is number || data.price is int) && data.price >= 0
+        && (data.currentKm is number || data.currentKm is int) && data.currentKm >= 0
+        && data.observation is string && data.observation.size() <= 1000
+        && data.createdAt is string && data.createdAt.size() <= 100;
+    }
+
+    // Rules matching collections
+    match /users/{userId} {
+      allow get: if isVerifiedUser() && userId == request.auth.uid;
+      allow create: if isVerifiedUser() && userId == request.auth.uid && isValidUser(incoming());
+      allow update: if isVerifiedUser() && userId == request.auth.uid && isValidUser(incoming())
+        && incoming().uid == existing().uid;
+      allow delete: if false;
+    }
+
+    match /trips/{tripId} {
+      allow get: if isVerifiedUser() && existing().driverId == request.auth.uid;
+      allow list: if isVerifiedUser() && resource.data.driverId == request.auth.uid;
+      allow create: if isVerifiedUser() && isValidId(tripId) && incoming().driverId == request.auth.uid && isValidTrip(incoming());
+      allow update: if isVerifiedUser() && isValidId(tripId) && existing().driverId == request.auth.uid && incoming().driverId == request.auth.uid && isValidTrip(incoming());
+      allow delete: if isVerifiedUser() && isValidId(tripId) && existing().driverId == request.auth.uid;
+    }
+
+    match /expenses/{expenseId} {
+      allow get: if isVerifiedUser() && existing().driverId == request.auth.uid;
+      allow list: if isVerifiedUser() && resource.data.driverId == request.auth.uid;
+      allow create: if isVerifiedUser() && isValidId(expenseId) && incoming().driverId == request.auth.uid && isValidExpense(incoming());
+      allow update: if isVerifiedUser() && isValidId(expenseId) && existing().driverId == request.auth.uid && incoming().driverId == request.auth.uid && isValidExpense(incoming());
+      allow delete: if isVerifiedUser() && isValidId(expenseId) && existing().driverId == request.auth.uid;
+    }
+
+    match /maintenance/{maintId} {
+      allow get: if isVerifiedUser() && existing().driverId == request.auth.uid;
+      allow list: if isVerifiedUser() && resource.data.driverId == request.auth.uid;
+      allow create: if isVerifiedUser() && isValidId(maintId) && incoming().driverId == request.auth.uid && isValidMaintenance(incoming());
+      allow update: if isVerifiedUser() && isValidId(maintId) && existing().driverId == request.auth.uid && incoming().driverId == request.auth.uid && isValidMaintenance(incoming());
+      allow delete: if isVerifiedUser() && isValidId(maintId) && existing().driverId == request.auth.uid;
+    }
+
+    match /gas_loads/{gasId} {
+      allow get: if isVerifiedUser() && existing().driverId == request.auth.uid;
+      allow list: if isVerifiedUser() && resource.data.driverId == request.auth.uid;
+      allow create: if isVerifiedUser() && isValidId(gasId) && incoming().driverId == request.auth.uid && isValidGasLoad(incoming());
+      allow update: if isVerifiedUser() && isValidId(gasId) && existing().driverId == request.auth.uid && incoming().driverId == request.auth.uid && isValidGasLoad(incoming());
+      allow delete: if isVerifiedUser() && isValidId(gasId) && existing().driverId == request.auth.uid;
+    }
+  }
+}
