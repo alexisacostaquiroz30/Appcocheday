@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Expense, ExpenseCategory } from '../types';
 import { addExpense, deleteExpense } from '../db';
-import { Plus, Trash2, ShoppingBag, DollarSign, MessageSquare, Coffee, Check, Search } from 'lucide-react';
+import { Plus, Trash2, ShoppingBag, DollarSign, MessageSquare, Coffee, Check, Search, ChevronLeft, ChevronRight } from 'lucide-react';
 
 interface ExpensesManagerProps {
   expenses: Expense[];
@@ -35,6 +35,14 @@ export default function ExpensesManager({ expenses, onRefresh, uid }: ExpensesMa
   
   const [selectedFilter, setSelectedFilter] = useState<'all' | ExpenseCategory>('all');
   const [loading, setLoading] = useState(false);
+
+  // Pagination states
+  const [currentPage, setCurrentPage] = useState(1);
+  const ITEMS_PER_PAGE = 10;
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [selectedFilter]);
 
   async function handleAddExpense(e: React.FormEvent) {
     e.preventDefault();
@@ -79,6 +87,11 @@ export default function ExpensesManager({ expenses, onRefresh, uid }: ExpensesMa
   });
 
   const sumTotalFiltered = filteredExpenses.reduce((sum, e) => sum + e.amount, 0);
+
+  // Pagination calculations
+  const totalPages = Math.max(1, Math.ceil(filteredExpenses.length / ITEMS_PER_PAGE));
+  const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+  const paginatedExpenses = filteredExpenses.slice(startIndex, startIndex + ITEMS_PER_PAGE);
 
   return (
     <div className="space-y-5">
@@ -227,7 +240,7 @@ export default function ExpensesManager({ expenses, onRefresh, uid }: ExpensesMa
             <p className="text-[10px] text-gray-400 mt-1">Saboriza tus viajes; registra gastos pequeños arriba.</p>
           </div>
         ) : (
-          filteredExpenses.map((exp) => (
+          paginatedExpenses.map((exp) => (
             <div key={exp.id} className="bg-white rounded-2.5xl p-4 border border-gray-100 shadow-xs flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <span className="text-2xl bg-gray-50 p-2 rounded-xl border border-gray-100 flex items-center justify-center shrink-0">
@@ -257,6 +270,35 @@ export default function ExpensesManager({ expenses, onRefresh, uid }: ExpensesMa
           ))
         )}
       </div>
+
+      {/* PAGINATION CONTROLS */}
+      {totalPages > 1 && (
+        <div className="flex items-center justify-between bg-white px-4.5 py-3 rounded-2.5xl border border-gray-100 shadow-xs mt-4">
+          <button
+            type="button"
+            onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+            disabled={currentPage === 1}
+            className="p-2 border border-gray-200 rounded-xl hover:bg-gray-50 disabled:opacity-50 disabled:hover:bg-transparent transition-colors flex items-center justify-center gap-1 text-xs font-bold text-gray-700 disabled:pointer-events-none active:scale-95"
+          >
+            <ChevronLeft className="h-4 w-4 shrink-0 text-gray-600" />
+            <span>Anterior</span>
+          </button>
+          
+          <span className="text-[10px] font-black text-gray-800 font-mono">
+            Pág. {currentPage} / {totalPages}
+          </span>
+
+          <button
+            type="button"
+            onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+            disabled={currentPage === totalPages}
+            className="p-2 border border-gray-200 rounded-xl hover:bg-gray-50 disabled:opacity-50 disabled:hover:bg-transparent transition-colors flex items-center justify-center gap-1 text-xs font-bold text-gray-700 disabled:pointer-events-none active:scale-95"
+          >
+            <span>Siguiente</span>
+            <ChevronRight className="h-4 w-4 shrink-0 text-gray-600" />
+          </button>
+        </div>
+      )}
     </div>
   );
 }

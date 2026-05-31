@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Trip } from '../types';
 import { addTrip, updateTrip, deleteTrip } from '../db';
-import { Plus, Check, Clock, Trash2, Search, Filter, MessageSquare, DollarSign, User } from 'lucide-react';
+import { Plus, Check, Clock, Trash2, Search, Filter, MessageSquare, DollarSign, User, ChevronLeft, ChevronRight } from 'lucide-react';
 
 interface TripsManagerProps {
   trips: Trip[];
@@ -19,6 +19,14 @@ export default function TripsManager({ trips, onRefresh, uid }: TripsManagerProp
   const [searchQuery, setSearchQuery] = useState('');
   const [filterPaid, setFilterPaid] = useState<'all' | 'paid' | 'pending'>('all');
   const [loading, setLoading] = useState(false);
+
+  // Pagination states
+  const [currentPage, setCurrentPage] = useState(1);
+  const ITEMS_PER_PAGE = 10;
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, filterPaid]);
 
   async function handleAddTrip(e: React.FormEvent) {
     e.preventDefault();
@@ -79,6 +87,11 @@ export default function TripsManager({ trips, onRefresh, uid }: TripsManagerProp
                           (filterPaid === 'pending' && !t.isPaid);
     return matchesSearch && matchesFilter;
   });
+
+  // Pagination calculations
+  const totalPages = Math.max(1, Math.ceil(filteredTrips.length / ITEMS_PER_PAGE));
+  const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+  const paginatedTrips = filteredTrips.slice(startIndex, startIndex + ITEMS_PER_PAGE);
 
   return (
     <div className="space-y-5">
@@ -255,8 +268,8 @@ export default function TripsManager({ trips, onRefresh, uid }: TripsManagerProp
             <p className="text-[10px] text-gray-400 mt-1">Registra nuevos viajes usando el botón superior.</p>
           </div>
         ) : (
-          filteredTrips.map((trip) => (
-            <div key={trip.id} className="bg-white rounded-3xl p-4.5 border border-gray-100 shadow-xs flex flex-col gap-3">
+          paginatedTrips.map((trip) => (
+            <div key={trip.id} className="bg-white rounded-3xl p-4.5 border border-gray-100 shadow-xs flex flex-col gap-3 font-sans">
               <div className="flex items-start justify-between">
                 <div>
                   <h4 className="font-extrabold text-sm text-gray-900">{trip.passengerName}</h4>
@@ -307,6 +320,35 @@ export default function TripsManager({ trips, onRefresh, uid }: TripsManagerProp
           ))
         )}
       </div>
+
+      {/* PAGINATION CONTROLS */}
+      {totalPages > 1 && (
+        <div className="flex items-center justify-between bg-white px-4.5 py-3 rounded-2.5xl border border-gray-100 shadow-xs mt-4">
+          <button
+            type="button"
+            onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+            disabled={currentPage === 1}
+            className="p-2 border border-gray-200 rounded-xl hover:bg-gray-50 disabled:opacity-50 disabled:hover:bg-transparent transition-colors flex items-center justify-center gap-1 text-xs font-bold text-gray-700 disabled:pointer-events-none active:scale-95"
+          >
+            <ChevronLeft className="h-4 w-4 shrink-0 text-gray-600" />
+            <span>Anterior</span>
+          </button>
+          
+          <span className="text-[10px] font-black text-gray-800 font-mono">
+            Pág. {currentPage} / {totalPages}
+          </span>
+
+          <button
+            type="button"
+            onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+            disabled={currentPage === totalPages}
+            className="p-2 border border-gray-200 rounded-xl hover:bg-gray-50 disabled:opacity-50 disabled:hover:bg-transparent transition-colors flex items-center justify-center gap-1 text-xs font-bold text-gray-700 disabled:pointer-events-none active:scale-95"
+          >
+            <span>Siguiente</span>
+            <ChevronRight className="h-4 w-4 shrink-0 text-gray-600" />
+          </button>
+        </div>
+      )}
     </div>
   );
 }
